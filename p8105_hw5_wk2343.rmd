@@ -265,6 +265,6 @@ ggplot(data = average_estimate,
   
 ```
 
-As shown above, as the effect size grows larger, the average estimate in these two groups become similar. However, the unignorable difference in $\beta_1 = 1$ to $\beta_1 = 4$ results from the filtering criteria: taking only those who rejected null hypothesis. 
+As shown above, the difference in $\beta_1 = 1$ to $\beta_1 = 4$ of these two groups are unignorable. For those estimates that leads to rejecting null hypothesis, the difference of it to the null($\beta_1 = 0$) should be "extreme" enough. After filtering out those being similar to the null value, the extreme values left should result in average estimates that prone to bias. When the true coefficient grows larger, the statistical power becomes larger, which leads to more results that rejected null hypothesis. In this case, the two groups becomes similar since there's less data discarded when calculating average estimate in `nulls rejected` group. 
 
 
