@@ -119,19 +119,44 @@ P2df = P2df %>%
     separate(col = file_names, into = c("arm", "id"), sep = "_", remove = T) %>% 
     separate(col = id, into = c("id", "trash"), sep = 2, remove = T) %>% 
   
-    # facotrize experimental arm and rename them 
+    # rename the "arm" variable to include 
     mutate(
-      arm = factor(arm, levels = c("con", "exp"), labels =c("control", "experiment"))
+      subject = str_c(arm, id),
+      arm = factor(arm, levels = c("con", "exp"), labels = c("control", "experiment"))
     ) %>% 
-    select(-trash) %>%
+    select(subject, arm, everything(), -trash) %>%
   
     # make the "week" variable into long format
     pivot_longer(week_1:week_8, 
                 names_to = "week",
                  values_to = "observation") %>% 
     separate(week, c("trash", "week"), "_", remove = T) %>% 
+    
+    # mutate the class of week and id into numeric
+    mutate(
+      week = as.numeric(week),
+      id = as.numeric(id)
+    ) %>% 
     select(-trash)
 
 ```
+
+After we tidy up the data, we can plot the spaghetti.
+
+```{r spaghetti}
+P2df %>% 
+  ggplot(aes(x = week, y = observation, group = subject, color = arm)) + 
+  geom_line(aes(color = arm)) + 
+  labs(
+      title = "Time trend: group comparison of weekly observation",
+      x = "Week",
+      y = "Observation",
+      color = "Group")
+
+```
+
+Accordingly, the general trend of observations in experiment group is higher than those in control group. Also, there's a general upgrowing trend from week 1 to week 8 in experiment group, while the time trend isn't obvious in control group. 
+
+# Problem 3
 
 
