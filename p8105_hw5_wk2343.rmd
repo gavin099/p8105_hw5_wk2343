@@ -8,6 +8,7 @@ output: github_document
 ```{r setup, include = FALSE}
 library(tidyverse)
 library(rvest)
+
 knitr::opts_chunk$set(
 	echo = TRUE,
 	warning = FALSE,
@@ -22,6 +23,7 @@ options(
 scale_colour_discrete = scale_colour_viridis_d
 scale_fill_discrete = scale_fill_viridis_d
 theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
 ```
 
 # Problem 1
@@ -33,6 +35,7 @@ set.seed(10)
 iris_with_missing = iris %>% 
   map_df(~replace(.x, sample(1:150, 20) , NA) ) %>%
   mutate(Species = as.character(Species))
+
 ```
 
 
@@ -80,7 +83,54 @@ iris_with_missing %>%
 
 ## Dataframe with all file names
 
+Firstly, construct the grand framework of the whole dataset.
+
 ```{r collect all the data names}
+P2df = 
+  tibble(
+    file_names = list.files(path = "data")
+  )
+
+```
+
+## Read in all the datas
+
+```{r data read in with mapping}
+# create readin function
+readinfunc = function(x) {
+  y = read.csv(file = str_c("data/", x), header = T)
+}
+
+# insert data into framework
+P2df = P2df %>%
+  mutate(
+    data = map(file_names, readinfunc))
+
+```
+
+## Tidy the result
+
+```{r tidy up}
+# unnest the inserted values 
+P2df = P2df %>% 
+  unnest(cols = data) %>% 
+    
+    # seperate the string factors and keep the information needed
+    separate(col = file_names, into = c("arm", "id"), sep = "_", remove = T) %>% 
+    separate(col = id, into = c("id", "trash"), sep = 2, remove = T) %>% 
+  
+    # facotrize experimental arm and rename them 
+    mutate(
+      arm = factor(arm, levels = c("con", "exp"), labels =c("control", "experiment"))
+    ) %>% 
+    select(-trash) %>%
+  
+    # make the "week" variable into long format
+    pivot_longer(week_1:week_8, 
+                names_to = "week",
+                 values_to = "observation") %>% 
+    separate(week, c("trash", "week"), "_", remove = T) %>% 
+    select(-trash)
 
 ```
 
