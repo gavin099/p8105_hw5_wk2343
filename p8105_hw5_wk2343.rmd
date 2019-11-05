@@ -159,4 +159,58 @@ Accordingly, the general trend of observations in experiment group is higher tha
 
 # Problem 3
 
+Firstly, construct the regression function.
+
+```{r regression function}
+# set the default and function
+sim_regression = function(n = 30, beta0 = 2, beta1) {
+  
+  sim_data = tibble(
+    x = rnorm(n, mean = 0, sd = 1),
+    y = beta0 + beta1 * x + rnorm(n, 0, sd = 50 ^ 0.5)
+  )
+  # fit in the model  
+  ls_fit = lm(y ~ x, data = sim_data) %>% 
+    broom::tidy() %>% 
+    # choose the necessary part
+    select(term, estimate, p.value) %>% 
+    filter(term == "x") %>% 
+    select(estimate, p.value)
+  
+  ls_fit
+}
+
+```
+
+Next, we can do the simulation with $\beta_1 = 0$.
+
+```{r simulation}
+sim_results = 
+  tibble(coef = c(0, 1, 2, 3, 4, 5, 6)) %>% 
+  mutate(
+    output_lists = map(.x = coef, ~rerun(10000, sim_regression(beta1 = .x))), 
+    estimate_dfs = map(output_lists, bind_rows)) %>% 
+    select(-output_lists)
+
+```
+
+Here we have a nicely formatted data frame with coefficients and their respective 10000 simulation encoded. In the following, I'm adding the hypothesis results according to $\alpha = 0.05$.
+
+```{r hypo test results}
+sim_results_unnested = 
+  unnest(sim_results, cols = estimate_dfs) %>% 
+  mutate(
+    test_result = ifelse(p.value >= 0.05, "fail to reject", "reject")
+  )
+
+```
+
+After this result is generated, we can summarize the reject proportion by coefficient.
+
+```{r}
+sim_results_power =
+  sim_results_unnested %>% 
+  group_by(coef)
+
+```
 
