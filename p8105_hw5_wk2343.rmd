@@ -200,17 +200,71 @@ Here we have a nicely formatted data frame with coefficients and their respectiv
 sim_results_unnested = 
   unnest(sim_results, cols = estimate_dfs) %>% 
   mutate(
-    test_result = ifelse(p.value >= 0.05, "fail to reject", "reject")
+    # while 0 indicates fail to reject, 1 indicates reject null
+    test_result = ifelse(p.value >= 0.05, 0, 1),
+    coef = as.factor(as.character(coef))
   )
 
 ```
 
 After this result is generated, we can summarize the reject proportion by coefficient.
 
-```{r}
+```{r power table}
 sim_results_power =
   sim_results_unnested %>% 
-  group_by(coef)
+  select(coef, test_result) %>% 
+  group_by(coef) %>% 
+    summarize(
+      success = sum(test_result),
+      total = n(),
+      proportion = round( success / total, digits = 2)
+    ) 
+
+ggplot(data = sim_results_power, aes(x = coef, y = proportion, fill = coef)) + 
+geom_bar(stat = "identity") + 
+labs(
+  title = "Barplot: trend of statistical power across true coefficients",
+  x = "True coefficient",
+  y = "Reject proportion",
+  fill = "Coefficient"
+)
 
 ```
+
+Accordingly, as the true value of $\beta_1$ rises, it's more distant from the null setting $\beta_1=0$. To put it differently, it indicates that the effect size is larger. Therefore, the power grows larger as the effect size goes.
+
+Secondly, I'm producing the plot that shows the average estimate of $\hat{\beta_1}$.
+
+```{r beta1hat plot}
+average_estimate = 
+  sim_results_unnested %>% 
+  select(coef, estimate, test_result) %>% 
+  group_by(coef) %>% 
+  # calculate respective 
+  summarize(
+    mean = mean(estimate),
+    mean_rejected = mean(estimate[test_result == 1])) %>%
+  
+  # encode the results by filtering criteria
+  pivot_longer(mean:mean_rejected) %>% 
+  mutate(
+    rejection_group = ifelse(name == "mean_rejected", "nulls rejected", "original"),
+    rejection_group = as.factor(rejection_group)
+  )
+
+# plotting
+ggplot(data = average_estimate, 
+       aes(x = coef, y = value, color = rejection_group, group = rejection_group)) +
+  geom_line() + geom_point() + 
+  labs(
+    title = "Scatter and line plot: comparing full results and reduced results",
+    x = "Coefficients",
+    y = "Mean estimate",
+    color = "Filter group"
+  )
+  
+```
+
+As shown above, as the effect size grows larger, the average estimate in these two groups become similar. However, the unignorable difference in $\beta_1 = 1$ to $\beta_1 = 4$ results from the filtering criteria: taking only those who rejected null hypothesis. 
+
 
